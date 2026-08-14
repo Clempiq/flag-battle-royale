@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flag Battle Royale · Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ===================== PAGE D'ACCUEIL (réglages) ===================== -->
+<div id="home">
+  <div class="home-scroll">
+    <div class="home-head">
+      <div class="home-logo">🏁 FLAG BATTLE ROYALE</div>
+      <div class="home-sub">Règle ta partie, puis clique sur Démarrer</div>
+    </div>
+    <div id="homeForm"></div>
+    <div class="home-actions">
+      <button id="btnStart" class="home-start">▶&nbsp; DÉMARRER</button>
+      <div class="home-secondary">
+        <button id="btnFullscreen" class="home-btn">⛶ Plein écran</button>
+        <button id="btnDefaults" class="home-btn">↩ Valeurs par défaut</button>
+        <button id="btnResetStats" class="home-btn">🗑 Réinitialiser le classement</button>
+      </div>
+      <div class="home-hint">Pour OBS / TikTok LIVE Studio : ajoute <code>?go=1</code> à la fin de l'URL pour lancer directement. Le bouton <b>Plein écran</b> (ou <code>F11</code>) masque tes onglets ; une source <b>Navigateur</b> dans OBS ne capture de toute façon jamais le navigateur.</div>
+    </div>
+  </div>
+  <div id="homeToast"></div>
+</div>
+
+<!-- ===================== LE LIVE ===================== -->
+<div id="stage" style="display:none">
+
+  <div id="topbar">
+    <div id="roundLabel">QUALIFYING</div>
+    <div id="timerPill"><span id="tpRound">QUALIFYING</span><span>·</span><span class="sub" id="tpTime">00:00</span></div>
+    <div id="titleHolder" style="display:none"></div>
+  </div>
+
+  <!-- COLONNE GAUCHE : champions -->
+  <div id="leaderboard" class="side-col">
+    <div id="lbTitle" class="lb-title">🏆 CHAMPIONS</div>
+    <div id="lbViewport" class="lb-viewport"><div id="lbTrack" class="lb-track"></div></div>
+  </div>
+
+  <!-- COLONNE DROITE : qualifiés du round -->
+  <div id="qualified" class="side-col">
+    <div class="lb-title"><span id="qTitle">✅ QUALIFIÉS</span><span id="qCount" class="q-count">0</span></div>
+    <div id="qViewport" class="lb-viewport"><div id="qTrack" class="lb-track"></div></div>
+  </div>
+
+  <div id="arenaWrap">
+    <div id="aliveTag"><b id="aliveN">0</b> IN THE RING</div>
+    <canvas id="arena"></canvas>
+  </div>
+
+  <div id="winnerBanner">
+    <div class="wb-title" id="wbTitle">HEAT WINNER</div>
+    <img class="wb-flag" id="wbFlag" alt="" />
+    <div class="wb-name" id="wbName">—</div>
+    <div class="wb-sub" id="wbSub"></div>
+  </div>
+
+  <!-- Les pays de la manche en cours (barrés quand éliminés) -->
+  <div id="heatRoster"><div id="hrGrid"></div></div>
+
+  <div id="progressWrap">
+    <div id="progressLabelRow">
+      <div class="l"><b id="progDone">0</b> / <span id="progTotal">0</span> <span id="progNoun">FLAGS</span></div>
+      <div class="r" id="progStage">QUALIFYING STAGE</div>
+    </div>
+    <div id="progressTrack"><div id="progressFill"></div></div>
+  </div>
+
+  <div id="confetti"></div>
+</div>
+
+<!-- boutons discrets (se cachent quand la souris est immobile ; jamais capturés par une source Navigateur OBS) -->
+<button id="homeToggle" title="Réglages (retour au menu)">⚙</button>
+<button id="fsToggle" title="Plein écran / Fenêtre">⛶</button>
+
+<script src="js/config.js"></script>
+<script src="js/countries.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/leaderboard.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/home.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
