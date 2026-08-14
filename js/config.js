@@ -14,7 +14,7 @@ const CONFIG = {
      ====================================================================== */
   GROUP_SIZE:        20,    // éléments par manche. 20 = championnat court (2 rounds) et cercle bien rempli.
   HEAT_DURATION_SEC: 45,    // durée max d'une manche ; sinon le + proche du centre gagne
-  BASE_SPEED:        235,   // ← VITESSE DES BOULES (px/s). Monte pour + de rythme.
+  BASE_SPEED:        290,   // ← VITESSE DES BOULES (px/s). Monte pour + de rythme.
   MODE:              'countries', // contenu du jeu : 'countries' | 'clubs' | 'brands' | 'capitals' (voir js/modes.js)
   START_SHUFFLE:     true,  // true = éléments MÉLANGÉS à chaque championnat (recommandé, + de variété)
   POOL_LIMIT:        0,     // 0 = tout le pool ; ex. 32 = seulement les 32 premiers

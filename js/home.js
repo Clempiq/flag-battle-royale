@@ -5,7 +5,7 @@
    ======================================================================= */
 window.Home = (function () {
   const $ = (id) => document.getElementById(id);
-  const LS_KEY = 'br_config_v4';
+  const LS_KEY = 'br_config_v5';
   const DEFAULTS = Object.assign({}, window.CONFIG); // capturé avant tout override
 
   // key, label, type, [min, max, step]
