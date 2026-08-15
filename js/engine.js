@@ -463,8 +463,13 @@ window.Engine = (function () {
 
   /* ---------- loop ---------- */
   let last = performance.now();
+  let lastDraw = -1e9;
   function loop(now) {
     requestAnimationFrame(loop);
+    // plafond d'images/s : évite de calculer 60 fps quand on n'en diffuse que 25-30
+    const cap = CONFIG.RENDER_FPS || 0;
+    if (cap > 0 && (now - lastDraw) < (1000 / cap) - 1) return;
+    lastDraw = now;
     try {
       let dt = (now - last) / 1000; last = now; if (dt > 0.05) dt = 0.05;
       const wrap = $('arenaWrap'); if (wrap.clientWidth > 80 && wrap.clientWidth !== _lastMeasuredW) sizeCanvas();

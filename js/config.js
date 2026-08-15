@@ -52,6 +52,8 @@ const CONFIG = {
   WANDER:        0,    // courbe des trajectoires (0 = lignes droites ; monte pour des courbes)
   FLAG_RADIUS:   26,   // taille des drapeaux (px). Avec 20 par manche, 24–28 est le bon compromis.
   COLLISIONS:    true, // ⭐ les boules s'entrechoquent entre elles (beaucoup plus d'aléatoire)
+  RENDER_FPS:    32,   // plafond d'images/s calculées (0 = illimité). 32 = fluide et 2× moins de CPU,
+                       // indispensable pour un serveur qui diffuse en 24/7.
   TRAILS:        true, // traînées derrière les drapeaux
   TRAIL_LENGTH:  10,
 

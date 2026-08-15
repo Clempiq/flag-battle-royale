@@ -26,6 +26,7 @@ window.Home = (function () {
       ['SPEED_JITTER',  'Variation de vitesse',         'range', 0, 150, 5],
       ['BOUNCE_RANDOM', 'Hasard des rebonds (°)',       'range', 0, 45, 1],
       ['COLLISIONS',    'Chocs entre boules',           'bool'],
+      ['RENDER_FPS',    'Images/s calculées (CPU)',     'range', 20, 60, 1],
       ['END_ACCEL',     'Accélération fin de manche',   'range', 0, 2, 0.1],
       ['WANDER',        'Courbes (0 = lignes droites)', 'range', 0, 6, 0.1],
       ['FLAG_RADIUS',   'Taille des drapeaux',          'range', 14, 70, 1],
