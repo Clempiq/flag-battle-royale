@@ -47,6 +47,13 @@
     if (st) st.style.transform = `translate(-50%, -50%) scale(${s})`;
   }
   window.addEventListener('resize', fitStage);
+  // Certains hôtes (source « lien » de TikTok LIVE Studio, navigateurs intégrés…)
+  // redimensionnent la surface SANS déclencher l'événement resize : on surveille
+  // donc aussi la taille réelle, sinon la page reste calée sur l'ancien format.
+  if (window.ResizeObserver) {
+    try { new ResizeObserver(fitStage).observe(document.documentElement); } catch (e) {}
+  }
+  [200, 800, 2000, 5000].forEach(ms => setTimeout(fitStage, ms));
 
   function applyTheme() {
     const r = document.documentElement.style;

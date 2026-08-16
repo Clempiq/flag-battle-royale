@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DIAG — taille réelle de la source</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+  #box{position:fixed;inset:0;border:12px solid #25F4EE;box-sizing:border-box;display:flex;
+       align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center}
+  #size{font-size:9vmin;font-weight:900;color:#25F4EE;line-height:1.1}
+  #ratio{font-size:5vmin;font-weight:700}
+  #dpr{font-size:3.4vmin;color:#9fb}
+  .c{position:fixed;width:70px;height:70px;border:10px solid #FE2C55}
+  .tl{top:0;left:0;border-right:0;border-bottom:0}
+  .tr{top:0;right:0;border-left:0;border-bottom:0}
+  .bl{bottom:0;left:0;border-right:0;border-top:0}
+  .br{bottom:0;right:0;border-left:0;border-top:0}
+</style></head><body>
+<div id="box">
+  <div id="size">…</div>
+  <div id="ratio"></div>
+  <div id="dpr"></div>
+</div>
+<div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+<script>
+function upd(){
+  var w=window.innerWidth,h=window.innerHeight;
+  document.getElementById('size').textContent=w+' x '+h;
+  var r=w/h;
+  document.getElementById('ratio').textContent =
+    (r<0.62 ? 'VERTICAL 9:16 — OK' : (Math.abs(r-16/9)<0.2 ? '16:9 PAYSAGE — probleme' : 'ratio '+r.toFixed(3)));
+  document.getElementById('dpr').textContent='dPR '+(window.devicePixelRatio||1)+' — ecran '+screen.width+'x'+screen.height;
+}
+addEventListener('resize',upd); upd(); setInterval(upd,1000);
+</script></body></html>
