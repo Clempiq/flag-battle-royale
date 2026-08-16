@@ -193,7 +193,10 @@ window.Engine = (function () {
   /* ---------- particles ---------- */
   function spawnParticles(heat) {
     T.flagR = CONFIG.FLAG_RADIUS;                 // on repart de la taille de départ
-    const maxR = Math.max(10, RING_R - CONFIG.FLAG_RADIUS * 1.3);
+    // on fait apparaître tout le monde BIEN à l'intérieur : sinon le désempilage plaque
+    // les boules contre la paroi et l'ouverture les élimine en masse dès la 1re seconde
+    const lim  = Math.max(10, RING_R - CONFIG.FLAG_RADIUS);
+    const maxR = lim * 0.84;
     T.particles = heat.map((entry) => {
       const ang = Math.random() * Math.PI * 2;
       const rr = Math.sqrt(Math.random()) * maxR;    // répartition uniforme sur tout le disque
@@ -204,8 +207,16 @@ window.Engine = (function () {
         vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, speed,
         state: 'alive', alpha: 1, exitVx: 0, exitVy: 0, scale: 0, trail: [] };
     });
-    // désempilage : quelques passes pour qu'aucune boule ne démarre superposée
-    for (let k = 0; k < 12; k++) resolveCollisions(true);
+    // désempilage : on sépare, puis on ramène tout le monde à l'intérieur (sinon le
+    // désempilage éjecte les boules vers la paroi et elles sortent immédiatement)
+    const safe = lim * 0.92;
+    for (let k = 0; k < 14; k++) {
+      resolveCollisions(true);
+      for (const q of T.particles) {
+        const dx = q.x - CX, dy = q.y - CY, d = Math.hypot(dx, dy) || 1;
+        if (d > safe) { q.x = CX + dx / d * safe; q.y = CY + dy / d * safe; }
+      }
+    }
     T.suddenDeath = false;
     T.eliminated = []; _lastAlive = -1;
     if (window.Leaderboard) { window.Leaderboard.updateEliminated([]); window.Leaderboard.updateSurvivors(heat, heat.length); }
@@ -394,34 +405,67 @@ window.Engine = (function () {
     if (typeof c === 'string' && c.length <= 3) return c.toUpperCase();          // code pays (fr, de…)
     return String(p.name || c).replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase(); // sinon initiales du nom
   }
+  /* ---------- sprites pré-découpés : ÉNORME gain CPU ----------
+     Découper un cercle (clip) pour chaque boule à chaque image est très lent.
+     On le fait UNE fois par drapeau dans un petit canvas réutilisé ensuite. */
+  const SPRITE = 128;
+  const spriteCache = new Map();
+  function getSprite(p) {
+    const key = CONFIG.MODE + ':' + p.code;
+    if (spriteCache.has(key)) return spriteCache.get(key);
+    const im = p.img;
+    if (!im || !im.__ready || !im.naturalWidth) return null;   // pas encore chargé : on réessaiera
+    const c = document.createElement('canvas'); c.width = SPRITE; c.height = SPRITE;
+    const g = c.getContext('2d');
+    const R = SPRITE / 2 - 3;
+    g.save();
+    g.beginPath(); g.arc(SPRITE / 2, SPRITE / 2, R, 0, Math.PI * 2); g.clip();
+    g.fillStyle = '#26304f'; g.fillRect(0, 0, SPRITE, SPRITE);
+    const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max((R * 2) / iw, (R * 2) / ih);
+    g.drawImage(im, SPRITE / 2 - iw * sc / 2, SPRITE / 2 - ih * sc / 2, iw * sc, ih * sc);
+    g.restore();
+    g.beginPath(); g.arc(SPRITE / 2, SPRITE / 2, R, 0, Math.PI * 2);
+    g.lineWidth = 5; g.strokeStyle = 'rgba(255,255,255,0.65)'; g.stroke();
+    spriteCache.set(key, c);
+    return c;
+  }
+
   function drawFlag(p) {
     const R = Math.max(0.5, FR() * p.scale);
     ctx.save();
     try {
       ctx.globalAlpha = p.alpha;
-      ctx.beginPath(); ctx.arc(p.x, p.y, R + 3, 0, Math.PI * 2);
-      ctx.fillStyle = p.state === 'exiting' ? hexA(CONFIG.ACCENT_2, 0.55) : 'rgba(6,8,16,0.9)';
-      if (!lightMode()) { ctx.shadowColor = p.state === 'exiting' ? CONFIG.ACCENT_2 : hexA(CONFIG.ACCENT_1, 0.55); ctx.shadowBlur = 16; }
-      ctx.fill(); ctx.shadowBlur = 0;
-      ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.clip();
-      const im = p.img;
-      if (im && im.__ready && im.naturalWidth) { const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max((R * 2) / iw, (R * 2) / ih), w = iw * sc, h = ih * sc; ctx.drawImage(im, p.x - w / 2, p.y - h / 2, w, h); }
-      else { ctx.fillStyle = '#26304f'; ctx.fillRect(p.x - R, p.y - R, R * 2, R * 2); ctx.fillStyle = '#cfe0ff'; ctx.font = `bold ${R * 0.62}px Orbitron, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fallbackLabel(p), p.x, p.y); }
+      const sp = getSprite(p);
+      if (sp) {
+        if (p.state === 'exiting') {   // halo rouge sur les éliminés
+          ctx.beginPath(); ctx.arc(p.x, p.y, R + 3, 0, Math.PI * 2);
+          ctx.fillStyle = hexA(CONFIG.ACCENT_2, 0.55); ctx.fill();
+        }
+        ctx.drawImage(sp, p.x - R, p.y - R, R * 2, R * 2);   // 1 seul appel, aucun clip
+      } else {
+        ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
+        ctx.fillStyle = '#26304f'; ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.stroke();
+        ctx.fillStyle = '#cfe0ff'; ctx.font = `bold ${R * 0.62}px Orbitron, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fallbackLabel(p), p.x, p.y);
+      }
     } catch (e) { /* jamais laisser le canvas dans un état corrompu */ }
     ctx.restore();
-    // contour ; le tenant du titre porte un liseré doré + une couronne
+    // le contour blanc est déjà dans le sprite : ici on ne dessine QUE le tenant du titre
     const isChamp = T.reigning && p.code === T.reigning.code;
-    ctx.save(); ctx.globalAlpha = p.alpha;
-    ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
-    if (isChamp) { ctx.lineWidth = 4; ctx.strokeStyle = '#ffcf33'; ctx.shadowColor = '#ffcf33'; ctx.shadowBlur = 14; }
-    else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; }
-    ctx.stroke(); ctx.shadowBlur = 0;
-    if (isChamp && p.state === 'alive') {
-      const cs = Math.max(16, Math.round(R * 1.1));   // couronne lisible même avec de petits drapeaux
-      ctx.font = `${cs}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('👑', p.x, p.y - R - cs * 0.45);
+    if (isChamp) {
+      ctx.save(); ctx.globalAlpha = p.alpha;
+      ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
+      ctx.lineWidth = 4; ctx.strokeStyle = '#ffcf33';
+      ctx.shadowColor = '#ffcf33'; ctx.shadowBlur = 14;
+      ctx.stroke(); ctx.shadowBlur = 0;
+      if (p.state === 'alive') {
+        const cs = Math.max(16, Math.round(R * 1.1));
+        ctx.font = `${cs}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('👑', p.x, p.y - R - cs * 0.45);
+      }
+      ctx.restore();
     }
-    ctx.restore();
   }
   function render() {
     ctx.clearRect(0, 0, CW, CH); drawRing();
