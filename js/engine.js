@@ -361,11 +361,22 @@ window.Engine = (function () {
   }
 
   /* ---------- render ---------- */
-  function drawRing() {
-    ctx.save();
+  // dégradé du fond du cercle : recréé UNIQUEMENT si le rayon change (sinon
+  // c'est une allocation + un gros remplissage à chaque image → très coûteux).
+  let _bgGrad = null, _bgGradR = -1, _bgGradC = '';
+  function ringGradient() {
+    if (_bgGrad && _bgGradR === RING_R && _bgGradC === CONFIG.ACCENT_1) return _bgGrad;
     const g = ctx.createRadialGradient(CX, CY, RING_R * 0.2, CX, CY, RING_R);
     g.addColorStop(0, hexA(CONFIG.ACCENT_1, 0.05)); g.addColorStop(1, hexA(CONFIG.ACCENT_1, 0));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(CX, CY, RING_R, 0, Math.PI * 2); ctx.fill();
+    _bgGrad = g; _bgGradR = RING_R; _bgGradC = CONFIG.ACCENT_1;
+    return g;
+  }
+  function drawRing() {
+    ctx.save();
+    // ombres portées canvas = très lentes en rendu logiciel (serveur 24/7) :
+    // on les réduit fortement quand il y a beaucoup de boules.
+    const lite = lightMode();
+    ctx.fillStyle = ringGradient(); ctx.beginPath(); ctx.arc(CX, CY, RING_R, 0, Math.PI * 2); ctx.fill();
     if (T.suddenDeath) {
       // anneau ORANGE qui pulse : la zone de sortie reste le seul élément rouge → lisible
       const sd = CONFIG.SUDDEN_DEATH_COLOR || '#ff9d00';
@@ -376,11 +387,12 @@ window.Engine = (function () {
     } else {
       ctx.lineWidth = 7;
       ctx.strokeStyle = hexA(CONFIG.RING_COLOR, 0.5);
-      ctx.shadowColor = hexA(CONFIG.RING_COLOR, 0.4); ctx.shadowBlur = 14;
+      if (!lite) { ctx.shadowColor = hexA(CONFIG.RING_COLOR, 0.4); ctx.shadowBlur = 14; }
     }
     ctx.beginPath(); ctx.arc(CX, CY, RING_R, 0, Math.PI * 2); ctx.stroke();
     const half = (currentGapDeg() * Math.PI / 180) / 2;
-    ctx.lineWidth = 16; ctx.strokeStyle = CONFIG.GAP_COLOR; ctx.shadowColor = CONFIG.GAP_COLOR; ctx.shadowBlur = 40;
+    ctx.lineWidth = 16; ctx.strokeStyle = CONFIG.GAP_COLOR; ctx.shadowColor = CONFIG.GAP_COLOR;
+    ctx.shadowBlur = lite ? 12 : 40;
     ctx.beginPath(); ctx.arc(CX, CY, RING_R, gapCenter - half, gapCenter + half); ctx.stroke();
     ctx.shadowBlur = 0; ctx.strokeStyle = hexA(CONFIG.GAP_COLOR, 0.25); ctx.lineWidth = 3;
     for (let k = -2; k <= 2; k++) { const a = gapCenter + k * (half / 2.4);
@@ -408,24 +420,39 @@ window.Engine = (function () {
   /* ---------- sprites pré-découpés : ÉNORME gain CPU ----------
      Découper un cercle (clip) pour chaque boule à chaque image est très lent.
      On le fait UNE fois par drapeau dans un petit canvas réutilisé ensuite. */
-  const SPRITE = 128;
+  /* Les sprites sont fabriqués À LA TAILLE OÙ ILS SONT DESSINÉS.
+     Avant, un sprite de 128 px était réduit à ~30 px pour chacune des 166
+     boules et à chaque image : c'est ce redimensionnement (166 × 30 fois par
+     seconde) qui saturait le processeur du serveur et rendait le flux saccadé.
+     Toutes les boules ayant le même rayon, un seul palier suffit à la fois. */
+  const SPRITE_STEPS = [40, 72, 128];
+  let SPRITE = 128;
   const spriteCache = new Map();
+  function updateSpriteSize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const want = FR() * 2 * dpr;
+    let s = SPRITE_STEPS[SPRITE_STEPS.length - 1];
+    for (const v of SPRITE_STEPS) if (v >= want) { s = v; break; }
+    if (s !== SPRITE) { SPRITE = s; spriteCache.clear(); }
+  }
   function getSprite(p) {
     const key = CONFIG.MODE + ':' + p.code;
-    if (spriteCache.has(key)) return spriteCache.get(key);
+    const hit = spriteCache.get(key);
+    if (hit) return hit;
     const im = p.img;
     if (!im || !im.__ready || !im.naturalWidth) return null;   // pas encore chargé : on réessaiera
-    const c = document.createElement('canvas'); c.width = SPRITE; c.height = SPRITE;
+    const S = SPRITE, edge = Math.max(2, Math.round(S / 26));
+    const c = document.createElement('canvas'); c.width = S; c.height = S;
     const g = c.getContext('2d');
-    const R = SPRITE / 2 - 3;
+    const R = S / 2 - edge * 0.6;
     g.save();
-    g.beginPath(); g.arc(SPRITE / 2, SPRITE / 2, R, 0, Math.PI * 2); g.clip();
-    g.fillStyle = '#26304f'; g.fillRect(0, 0, SPRITE, SPRITE);
+    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2); g.clip();
+    g.fillStyle = '#26304f'; g.fillRect(0, 0, S, S);
     const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max((R * 2) / iw, (R * 2) / ih);
-    g.drawImage(im, SPRITE / 2 - iw * sc / 2, SPRITE / 2 - ih * sc / 2, iw * sc, ih * sc);
+    g.drawImage(im, S / 2 - iw * sc / 2, S / 2 - ih * sc / 2, iw * sc, ih * sc);
     g.restore();
-    g.beginPath(); g.arc(SPRITE / 2, SPRITE / 2, R, 0, Math.PI * 2);
-    g.lineWidth = 5; g.strokeStyle = 'rgba(255,255,255,0.65)'; g.stroke();
+    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2);
+    g.lineWidth = edge; g.strokeStyle = 'rgba(255,255,255,0.65)'; g.stroke();
     spriteCache.set(key, c);
     return c;
   }
@@ -468,6 +495,8 @@ window.Engine = (function () {
     }
   }
   function render() {
+    updateSpriteSize();
+    ctx.imageSmoothingQuality = 'low';   // suffisant à cette taille, bien moins coûteux
     ctx.clearRect(0, 0, CW, CH); drawRing();
     for (const p of T.particles) if (p.state !== 'dead') drawTrail(p);
     for (const p of T.particles) if (p.state === 'exiting') drawFlag(p);

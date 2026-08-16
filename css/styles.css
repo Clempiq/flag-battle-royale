@@ -33,8 +33,8 @@ html,body{height:100%;background:#000;font-family:'Rajdhani',system-ui,sans-seri
 
 /* ---------- COLONNES LATÉRALES (champions à gauche, qualifiés à droite) ---------- */
 .side-col{position:absolute;top:330px;width:240px;height:1010px;z-index:5;
-  background:linear-gradient(180deg,rgba(12,14,24,.72),rgba(6,7,14,.55));border:1px solid rgba(37,244,238,.22);border-radius:16px;
-  padding:14px 9px;display:flex;flex-direction:column;backdrop-filter:blur(3px)}
+  background:linear-gradient(180deg,rgba(12,14,24,.9),rgba(6,7,14,.8));border:1px solid rgba(37,244,238,.22);border-radius:16px;
+  padding:14px 9px;display:flex;flex-direction:column}
 #leaderboard{left:18px}
 #qualified{right:18px;border-color:rgba(90,255,168,.2)}
 .lb-title{font-family:'Orbitron';font-weight:700;font-size:22px;letter-spacing:1px;color:var(--cyan);text-align:center;margin-bottom:10px;
@@ -192,7 +192,7 @@ html,body{height:100%;background:#000;font-family:'Rajdhani',system-ui,sans-seri
 /* boutons discrets du live (plein écran + retour réglages) */
 #fsToggle,#homeToggle{position:fixed;top:14px;z-index:150;width:50px;height:50px;border-radius:50%;
   border:1px solid rgba(140,180,255,.4);background:rgba(10,14,30,.8);color:#cfe0ff;font-size:22px;cursor:pointer;
-  transition:opacity .4s ease,transform .2s ease;backdrop-filter:blur(6px)}
+  transition:opacity .4s ease,transform .2s ease}
 #fsToggle{right:14px}
 #homeToggle{right:74px}
 #fsToggle:hover,#homeToggle:hover{transform:scale(1.08)}
@@ -202,3 +202,7 @@ html,body{height:100%;background:#000;font-family:'Rajdhani',system-ui,sans-seri
   background:rgba(10,14,26,.96);border:1px solid var(--cyan);color:#fff;padding:12px 22px;border-radius:12px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 #homeToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (max-width:640px){ .h-grid{grid-template-columns:1fr} .home-logo{font-size:34px} }
+
+/* boutons masqués : on les sort COMPLÈTEMENT du rendu (visibility), sinon le
+   navigateur garde une couche de composition active pendant tout le live. */
+#fsToggle.fs-hidden,#homeToggle.fs-hidden{visibility:hidden}

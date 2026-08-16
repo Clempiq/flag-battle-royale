@@ -113,7 +113,8 @@ const CONFIG = {
   /* ---- Sons légers (débloqués par le clic "Démarrer") ---- */
   SFX:         true,  // petits effets sonores (élimination / vainqueur / champion)
   SFX_BOUNCE:  true,  // petit "toc" à chaque rebond sur l'anneau (nombreux → rares)
-  SFX_VOLUME:  0.5,   // volume global des sons (0 = muet, 1 = fort)
+  SFX_VOLUME:  0.25,  // volume global des sons (0 = muet, 1 = fort). 0.25 évite la saturation
+                      // quand beaucoup de boules rebondissent en même temps.
 
   /* ======================================================================
      8) SOURCE DES DRAPEAUX
