@@ -45,6 +45,20 @@ window.Leaderboard = (function () {
     const html = list.length ? list.map(championRow).join('')
       : `<div class="lb-empty">Waiting for the<br>first champion 👑</div>`;
     setCol('champ', html, list.length);
+    updateChampStrip(list);
+  }
+
+  /* ---------- bandeau champions sur une ligne (mode express) ---------- */
+  function updateChampStrip(list) {
+    const el = $('champStrip'); if (!el) return;
+    if (!CONFIG.ALL_IN_ONE || !CONFIG.SHOW_LEADERBOARD || !CONFIG.CHAMPIONS_STRIP) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    const medals = ['🥇', '🥈', '🥉'];
+    if (!list.length) { el.innerHTML = `<span class="cs-lead">🏆 CHAMPIONS</span><span class="cs-empty">waiting for the first champion…</span>`; return; }
+    el.innerHTML = `<span class="cs-lead">🏆</span>` + list.slice(0, 5).map((s, i) =>
+      `<span class="cs-item${i === 0 ? ' first' : ''}">${medals[i] || (i + 1)}` +
+      `<img src="${window.itemImage(s.code)}" alt="" onerror="this.style.display='none'">` +
+      `<b>${s.name}</b><i>${s.titles}</i></span>`).join('');
   }
 
   /* ---------- QUALIFIÉS (droite) ---------- */
@@ -59,6 +73,35 @@ window.Leaderboard = (function () {
     const html = list.length ? list.map(qualRow).join('')
       : `<div class="lb-empty">Round in progress…</div>`;
     setCol('qual', html, list.length);
+  }
+
+  /* ---------- DERNIERS ÉLIMINÉS (gauche, bas — mode express) ---------- */
+  function updateEliminated(list) {
+    if (!cols.elim) return;
+    const l = (list || []).slice(0, 14);
+    const html = l.length
+      ? l.map((e, i) => `<div class="lb-row out${i === 0 ? ' fresh' : ''}">` +
+          `<img class="lb-flag" src="${window.itemImage(e[0])}" alt="" onerror="this.style.visibility='hidden'">` +
+          `<span class="lb-name">${e[1]}</span></div>`).join('')
+      : `<div class="lb-empty">No one yet…</div>`;
+    setCol('elim', html, 0);   // pas de défilement : on garde les plus récents en haut
+  }
+
+  /* ---------- SURVIVANTS (droite — mode express) ---------- */
+  function updateSurvivors(list, total) {
+    if (!cols.qual) return;
+    const n = (list || []).length;
+    const c = $('qCount'); if (c) c.textContent = n;
+    const seuil = CONFIG.SURVIVORS_AT || 16;
+    if (n > seuil) {
+      setCol('qual', `<div class="lb-empty"><b class="surv-big">${n}</b><br>STILL IN<br><span class="surv-sub">of ${total}</span></div>`, 0);
+      return;
+    }
+    const html = list.slice().sort((a, b) => a[1].localeCompare(b[1])).map(e =>
+      `<div class="lb-row alive"><span class="q-check">•</span>` +
+      `<img class="lb-flag" src="${window.itemImage(e[0])}" alt="" onerror="this.style.visibility='hidden'">` +
+      `<span class="lb-name">${e[1]}</span></div>`).join('');
+    setCol('qual', html, n);
   }
 
   /* ---------- boucle de défilement (les deux colonnes) ---------- */
@@ -78,13 +121,21 @@ window.Leaderboard = (function () {
   }
 
   function init() {
-    const lb = $('leaderboard'), q = $('qualified');
+    const lb = $('leaderboard'), q = $('qualified'), lo = $('lastout');
+    const express = !!CONFIG.ALL_IN_ONE;
     if (CONFIG.SHOW_LEADERBOARD) { if ($('lbTitle')) $('lbTitle').textContent = CONFIG.LEADERBOARD_TITLE; makeCol('champ', 'lbTrack', 'lbViewport'); }
     else if (lb) lb.style.display = 'none';
-    if (CONFIG.SHOW_QUALIFIED) { if ($('qTitle')) $('qTitle').textContent = CONFIG.QUALIFIED_TITLE; makeCol('qual', 'qTrack', 'qViewport'); }
-    else if (q) q.style.display = 'none';
+    if (CONFIG.SHOW_QUALIFIED) {
+      if ($('qTitle')) $('qTitle').textContent = express ? CONFIG.SURVIVORS_TITLE : CONFIG.QUALIFIED_TITLE;
+      makeCol('qual', 'qTrack', 'qViewport');
+    } else if (q) q.style.display = 'none';
+    // flux des éliminés : uniquement en mode express
+    if (express && CONFIG.SHOW_LASTOUT) {
+      if ($('loTitle')) $('loTitle').textContent = CONFIG.LASTOUT_TITLE;
+      makeCol('elim', 'loTrack', 'loViewport');
+    } else if (lo) lo.style.display = 'none';
     requestAnimationFrame(loop);
   }
 
-  return { init, updateChampions, updateQualified };
+  return { init, updateChampions, updateQualified, updateEliminated, updateSurvivors };
 })();

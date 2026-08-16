@@ -21,6 +21,9 @@
     r.setProperty('--cyan', CONFIG.ACCENT_1);
     r.setProperty('--accent', CONFIG.ACCENT_2);
     r.setProperty('--sd', CONFIG.SUDDEN_DEATH_COLOR || '#ff9d00');
+    // mode express : grand cercle, pas de colonne "qualifiés", pas de liste de noms
+    const stage = document.getElementById('stage');
+    if (stage) stage.classList.toggle('express', !!CONFIG.ALL_IN_ONE);
     const show = (id, on) => { const e = document.getElementById(id); if (e) e.style.display = on ? '' : 'none'; };
     show('roundLabel', CONFIG.SHOW_ROUND_LABEL);
     show('timerPill', CONFIG.SHOW_TIMER);

@@ -5,7 +5,7 @@
    ======================================================================= */
 window.Home = (function () {
   const $ = (id) => document.getElementById(id);
-  const LS_KEY = 'br_config_v5';
+  const LS_KEY = 'br_config_v6';
   const DEFAULTS = Object.assign({}, window.CONFIG); // capturé avant tout override
 
   // key, label, type, [min, max, step]
@@ -14,8 +14,9 @@ window.Home = (function () {
       ['MODE', 'Contenu du jeu', 'select'],
     ]],
     ['🏆 Tournoi', [
+      ['ALL_IN_ONE',          '⚡ Mode express (tous d’un coup)', 'bool'],
       ['START_SHUFFLE',       'Pays mélangés à chaque championnat', 'bool'],
-      ['GROUP_SIZE',          'Éléments par manche',        'range', 3, 30, 1],
+      ['GROUP_SIZE',          'Éléments par manche (mode classique)', 'range', 3, 30, 1],
       ['HEAT_DURATION_SEC',   'Durée max d’une manche (s)', 'range', 10, 120, 1],
       ['POOL_LIMIT',          'Limiter le nombre de pays (0 = tous)', 'range', 0, 195, 1],
       ['WINNER_BANNER_SEC',   'Pause vainqueur (s)',        'range', 1, 10, 0.5],

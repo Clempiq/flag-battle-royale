@@ -59,6 +59,36 @@ html,body{height:100%;background:#000;font-family:'Rajdhani',system-ui,sans-seri
 /* ---------- ARENA (le cercle, centré) ---------- */
 #arenaWrap{position:absolute;left:50%;transform:translateX(-50%);top:360px;width:560px;height:560px;z-index:3}
 
+/* =======================================================================
+   MODE EXPRESS : tous les drapeaux d'un coup → grand cercle, pas de
+   colonne "qualifiés", pas de liste de noms sous le cercle.
+   ======================================================================= */
+/* Mode express = ÉPURÉ : uniquement la colonne des champions à gauche,
+   et un grand cercle qui occupe tout l'espace restant. */
+#stage.express #heatRoster,
+#stage.express #qualified,
+#stage.express #lastout{display:none}
+#stage.express #leaderboard{left:18px;right:auto;width:250px;top:300px;height:1046px}
+#stage.express .lb-rank{width:22px;flex:0 0 22px}
+#stage.express #arenaWrap{left:286px;transform:none;top:352px;width:776px;height:776px}
+#stage.express #progressWrap{left:286px;right:18px;top:1176px}
+#stage.express #winnerBanner{left:674px;top:520px;width:600px}
+#stage.express #topbar{left:270px;right:18px}
+#stage.express #aliveTag{top:-46px;font-size:32px}
+#stage.express #aliveTag b{font-size:36px}
+
+/* bandeau champions (une ligne) */
+#champStrip{position:absolute;left:60px;right:60px;top:1408px;z-index:6;display:none;
+  align-items:center;justify-content:center;gap:14px;flex-wrap:nowrap;overflow:hidden}
+.cs-lead{font-size:30px;flex:0 0 auto}
+.cs-empty{font-family:'Rajdhani';font-weight:700;font-size:26px;color:var(--text-dim)}
+.cs-item{display:flex;align-items:center;gap:7px;font-family:'Rajdhani';font-size:26px;font-weight:700;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 14px 6px 10px;white-space:nowrap}
+.cs-item.first{background:rgba(37,244,238,.13);border-color:rgba(37,244,238,.4)}
+.cs-item img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.35)}
+.cs-item b{color:#fff;font-weight:700}
+.cs-item i{font-family:'Orbitron';font-style:normal;font-size:23px;color:var(--cyan)}
+
 /* ---------- ROSTER de la manche (sous le cercle) ---------- */
 #heatRoster{position:absolute;left:250px;right:250px;top:940px;z-index:6}
 #hrGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:9px}

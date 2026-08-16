@@ -88,7 +88,7 @@ window.Engine = (function () {
     pendingHeats: [], currentHeat: null, roundWinners: [],
     processedFlags: 0, totalFlags: 0, heatTimer: 0, bannerTimer: 0,
     particles: [], stats: {}, reigning: null, mode: null,
-    suddenDeath: false, heatIndex: 0, heatTotal: 0,
+    suddenDeath: false, heatIndex: 0, heatTotal: 0, eliminated: [], flagR: 15,
   };
 
   function pool() {
@@ -98,6 +98,7 @@ window.Engine = (function () {
     return p;
   }
   function labelForRound(n, roundIdx) {
+    if (CONFIG.ALL_IN_ONE) return 'BATTLE ROYALE';     // mode express : une seule manche
     const gs = CONFIG.GROUP_SIZE;
     if (n <= gs) return 'FINAL';                       // tout tient dans une manche → finale
     if (roundIdx === 0) return 'QUALIFYING';           // le 1er round est toujours les qualifs
@@ -105,6 +106,7 @@ window.Engine = (function () {
     return 'ROUND ' + (roundIdx + 1);
   }
   function splitIntoHeats(p) {
+    if (CONFIG.ALL_IN_ONE) return [p];                 // mode express : tout le monde ensemble
     const gs = CONFIG.GROUP_SIZE, heats = [];
     for (let i = 0; i < p.length; i += gs) heats.push(p.slice(i, i + gs));
     if (heats.length > 1 && heats[heats.length - 1].length === 1) {
@@ -181,12 +183,16 @@ window.Engine = (function () {
     bumpStat(entry, 'wins');
     window.Leaderboard && window.Leaderboard.updateQualified(T.roundWinners);
     window.SFX && window.SFX.winner();
+    // mode express : une seule manche → on saute l'annonce "heat winner",
+    // on enchaîne directement sur WORLD CHAMPION
+    if (CONFIG.ALL_IN_ONE) { T.phase = 'banner'; T.bannerTimer = 0; return; }
     showBanner(T.roundLabel === 'SEMI-FINAL' ? 'FINALIST' : 'HEAT WINNER', entry, false);
     T.phase = 'banner'; T.bannerTimer = CONFIG.WINNER_BANNER_SEC;
   }
 
   /* ---------- particles ---------- */
   function spawnParticles(heat) {
+    T.flagR = CONFIG.FLAG_RADIUS;                 // on repart de la taille de départ
     const maxR = Math.max(10, RING_R - CONFIG.FLAG_RADIUS * 1.3);
     T.particles = heat.map((entry) => {
       const ang = Math.random() * Math.PI * 2;
@@ -201,15 +207,29 @@ window.Engine = (function () {
     // désempilage : quelques passes pour qu'aucune boule ne démarre superposée
     for (let k = 0; k < 12; k++) resolveCollisions(true);
     T.suddenDeath = false;
+    T.eliminated = []; _lastAlive = -1;
+    if (window.Leaderboard) { window.Leaderboard.updateEliminated([]); window.Leaderboard.updateSurvivors(heat, heat.length); }
     updateAlive(T.particles.length);
     buildHeatRoster(heat);
   }
+
+  /* ---------- rayon dynamique : les drapeaux grossissent quand il en reste peu ----------
+     On garde la densité visuelle constante (r ∝ √(total/restants)), plafonnée. */
+  function targetRadius() {
+    const base = CONFIG.FLAG_RADIUS;
+    if (!CONFIG.GROW_FLAGS) return base;
+    const max = Math.max(base, CONFIG.FLAG_RADIUS_MAX || base);
+    const alive = T.particles.filter(p => p.state === 'alive').length;
+    if (alive < 1 || !T.totalFlags) return base;
+    return Math.min(max, base * Math.sqrt(T.totalFlags / alive));
+  }
+  function FR() { return T.flagR || CONFIG.FLAG_RADIUS; }
 
   /* ---------- collisions boule ↔ boule (chocs élastiques, masses égales) ---------- */
   function resolveCollisions(positionOnly) {
     if (!CONFIG.COLLISIONS && !positionOnly) return;
     const alive = T.particles.filter(p => p.state === 'alive');
-    const R = CONFIG.FLAG_RADIUS, minD = R * 2, minD2 = minD * minD;
+    const R = FR(), minD = R * 2, minD2 = minD * minD;
     for (let i = 0; i < alive.length; i++) {
       for (let j = i + 1; j < alive.length; j++) {
         const a = alive[i], b = alive[j];
@@ -250,7 +270,11 @@ window.Engine = (function () {
   }
   function stepPhysics(dt) {
     gapCenter += (CONFIG.GAP_ROTATE_DEG_S * Math.PI / 180) * dt;
-    const boundary = RING_R - CONFIG.FLAG_RADIUS;          // là où le drapeau touche l'anneau
+    // rayon animé en douceur vers sa cible (évite tout à-coup dans la physique)
+    const prevR = T.flagR;
+    T.flagR += (targetRadius() - T.flagR) * Math.min(1, dt * 1.8);
+    const grew = T.flagR - prevR;
+    const boundary = RING_R - T.flagR;                     // là où le drapeau touche l'anneau
     const jitterMax = (CONFIG.BOUNCE_RANDOM || 0) * Math.PI / 180;
     // léger regain de vitesse en fin de manche (garantit un vainqueur ; PAS d'attraction)
     const ef = Math.max(0, Math.min(1, (CONFIG.HEAT_DURATION_SEC - T.heatTimer) / Math.max(1, CONFIG.HEAT_DURATION_SEC)));
@@ -282,6 +306,10 @@ window.Engine = (function () {
           p.state = 'exiting';
           p.exitVx = ux * (target + 260); p.exitVy = uy * (target + 260);
           rosterOut(p.code);
+          // flux des derniers éliminés (colonne de gauche en mode express)
+          T.eliminated.unshift(p.entry);
+          if (T.eliminated.length > 14) T.eliminated.pop();
+          window.Leaderboard && window.Leaderboard.updateEliminated(T.eliminated);
           window.SFX && window.SFX.elim(); pushTrail(p); continue;
         }
         // Rebond élastique sur la normale (aucune perte d'énergie), + hasard
@@ -297,6 +325,8 @@ window.Engine = (function () {
 
     // ⚡ chocs entre boules (après le déplacement) → trajectoires imprévisibles
     resolveCollisions(false);
+    // pendant que les drapeaux grossissent, une passe de séparation en plus (évite les superpositions)
+    if (grew > 0.02) { resolveCollisions(true); resolveCollisions(true); }
 
     if (T.phase === 'heat') {
       const alive = T.particles.filter(p => p.state === 'alive');
@@ -343,16 +373,18 @@ window.Engine = (function () {
     ctx.beginPath(); ctx.arc(CX, CY, RING_R, gapCenter - half, gapCenter + half); ctx.stroke();
     ctx.shadowBlur = 0; ctx.strokeStyle = hexA(CONFIG.GAP_COLOR, 0.25); ctx.lineWidth = 3;
     for (let k = -2; k <= 2; k++) { const a = gapCenter + k * (half / 2.4);
-      ctx.beginPath(); ctx.moveTo(CX + Math.cos(a) * (RING_R + 6), CY + Math.sin(a) * (RING_R + 6)); ctx.lineTo(CX + Math.cos(a) * (RING_R + 60), CY + Math.sin(a) * (RING_R + 60)); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(CX + Math.cos(a) * (RING_R + 5), CY + Math.sin(a) * (RING_R + 5)); ctx.lineTo(CX + Math.cos(a) * (RING_R + 17), CY + Math.sin(a) * (RING_R + 17)); ctx.stroke(); }
     ctx.restore();
   }
+  // rendu allégé automatiquement quand il y a beaucoup de boules (ombres/traînées = très coûteux)
+  function lightMode() { return T.particles.length > (CONFIG.LIGHT_RENDER_AT || 40); }
   function drawTrail(p) {
-    if (!CONFIG.TRAILS || p.trail.length < 4) return;
+    if (!CONFIG.TRAILS || lightMode() || p.trail.length < 4) return;
     const n = p.trail.length / 2; ctx.save(); ctx.lineCap = 'round';
     for (let i = 1; i < n; i++) {
       const x0 = p.trail[(i - 1) * 2], y0 = p.trail[(i - 1) * 2 + 1], x1 = p.trail[i * 2], y1 = p.trail[i * 2 + 1], t = i / n;
       ctx.strokeStyle = hexA(p.state === 'exiting' ? CONFIG.ACCENT_2 : CONFIG.ACCENT_1, 0.26 * t * p.alpha);
-      ctx.lineWidth = CONFIG.FLAG_RADIUS * 0.9 * t * p.scale;
+      ctx.lineWidth = FR() * 0.9 * t * p.scale;
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
     }
     ctx.restore();
@@ -363,13 +395,14 @@ window.Engine = (function () {
     return String(p.name || c).replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase(); // sinon initiales du nom
   }
   function drawFlag(p) {
-    const R = Math.max(0.5, CONFIG.FLAG_RADIUS * p.scale);
+    const R = Math.max(0.5, FR() * p.scale);
     ctx.save();
     try {
       ctx.globalAlpha = p.alpha;
       ctx.beginPath(); ctx.arc(p.x, p.y, R + 3, 0, Math.PI * 2);
       ctx.fillStyle = p.state === 'exiting' ? hexA(CONFIG.ACCENT_2, 0.55) : 'rgba(6,8,16,0.9)';
-      ctx.shadowColor = p.state === 'exiting' ? CONFIG.ACCENT_2 : hexA(CONFIG.ACCENT_1, 0.55); ctx.shadowBlur = 16; ctx.fill(); ctx.shadowBlur = 0;
+      if (!lightMode()) { ctx.shadowColor = p.state === 'exiting' ? CONFIG.ACCENT_2 : hexA(CONFIG.ACCENT_1, 0.55); ctx.shadowBlur = 16; }
+      ctx.fill(); ctx.shadowBlur = 0;
       ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.clip();
       const im = p.img;
       if (im && im.__ready && im.naturalWidth) { const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max((R * 2) / iw, (R * 2) / ih), w = iw * sc, h = ih * sc; ctx.drawImage(im, p.x - w / 2, p.y - h / 2, w, h); }
@@ -384,8 +417,9 @@ window.Engine = (function () {
     else { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; }
     ctx.stroke(); ctx.shadowBlur = 0;
     if (isChamp && p.state === 'alive') {
-      ctx.font = `${Math.round(R * 0.95)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('👑', p.x, p.y - R - R * 0.5);
+      const cs = Math.max(16, Math.round(R * 1.1));   // couronne lisible même avec de petits drapeaux
+      ctx.font = `${cs}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('👑', p.x, p.y - R - cs * 0.45);
     }
     ctx.restore();
   }
@@ -419,8 +453,15 @@ window.Engine = (function () {
     else if (T.phase === 'champion') { t.textContent = 'CHAMPION'; pill.classList.remove('low'); }
     else { t.textContent = 'NEXT UP'; pill.classList.remove('low'); }
   }
+  let _lastAlive = -1;
   function updateAlive(n) {
     if (n === undefined) n = T.particles.filter(p => p.state === 'alive').length;
+    // en mode express : barre de progression + liste des survivants suivent les éliminations
+    if (CONFIG.ALL_IN_ONE && n !== _lastAlive) {
+      _lastAlive = n; updateProgress();
+      window.Leaderboard && window.Leaderboard.updateSurvivors(
+        T.particles.filter(p => p.state === 'alive').map(p => p.entry), T.totalFlags);
+    }
     const tag = $('aliveTag'); if (!tag) return;
     // états spectaculaires : FINAL 2 (duel) puis SUDDEN DEATH
     if (n === 2)            { tag.className = 'duel';   tag.innerHTML = '⚔️ FINAL 2 ⚔️'; }
@@ -428,6 +469,16 @@ window.Engine = (function () {
     else                    { tag.className = '';       tag.innerHTML = `<b id="aliveN">${n}</b> IN THE RING`; }
   }
   function updateProgress() {
+    // mode express : la barre montre les ÉLIMINÉS (elle se remplit pendant la manche)
+    if (CONFIG.ALL_IN_ONE) {
+      const alive = T.particles.filter(p => p.state === 'alive').length;
+      const out = Math.max(0, T.totalFlags - alive);
+      setText('progDone', out); setText('progTotal', T.totalFlags);
+      const e = $('progressFill'); if (e) e.style.width = (T.totalFlags ? out / T.totalFlags * 100 : 0) + '%';
+      setText('progStage', 'ELIMINATED');
+      if (window.currentMode) setText('progNoun', window.currentMode().noun);
+      return;
+    }
     setText('progDone', T.processedFlags); setText('progTotal', T.totalFlags);
     const el = $('progressFill'); if (el) el.style.width = (T.totalFlags ? Math.min(100, T.processedFlags / T.totalFlags * 100) : 0) + '%';
     setText('progStage', T.roundLabel + ' STAGE');
@@ -449,6 +500,10 @@ window.Engine = (function () {
   function buildHeatRoster(heat) {
     const grid = $('hrGrid'); if (!grid) return;
     rosterEls = {}; grid.innerHTML = '';
+    // trop de participants (mode express) → la liste des noms n'a plus de sens, on la masque
+    const box = $('heatRoster');
+    if (heat.length > 30) { if (box) box.style.display = 'none'; return; }
+    if (box && CONFIG.SHOW_ROSTER) box.style.display = '';
     grid.className = heat.length > 9 ? 'compact' : '';   // beaucoup de participants → pastilles compactes
     const sorted = heat.slice().sort((a, b) => a[1].localeCompare(b[1]));  // ordre alphabétique
     for (const e of sorted) {

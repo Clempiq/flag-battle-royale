@@ -12,8 +12,10 @@ const CONFIG = {
   /* ======================================================================
      1) LE PLUS ÉDITÉ
      ====================================================================== */
-  GROUP_SIZE:        20,    // éléments par manche. 20 = championnat court (2 rounds) et cercle bien rempli.
-  HEAT_DURATION_SEC: 45,    // durée max d'une manche ; sinon le + proche du centre gagne
+  ALL_IN_ONE:        true,  // ⭐ MODE EXPRESS : TOUS les drapeaux dans une seule manche (1 manche = 1 champion).
+                            //    false = mode tournoi classique par groupes (voir GROUP_SIZE).
+  GROUP_SIZE:        20,    // (mode classique uniquement) éléments par manche
+  HEAT_DURATION_SEC: 90,    // durée max d'une manche ; sinon le + proche du centre gagne
   BASE_SPEED:        290,   // ← VITESSE DES BOULES (px/s). Monte pour + de rythme.
   MODE:              'countries', // contenu du jeu : 'countries' | 'clubs' | 'brands' | 'capitals' (voir js/modes.js)
   START_SHUFFLE:     true,  // true = éléments MÉLANGÉS à chaque championnat (recommandé, + de variété)
@@ -50,7 +52,10 @@ const CONFIG = {
   BOUNCE_RANDOM: 14,   // hasard sur l'angle de rebond (degrés) → "rebonds aléatoires"
   END_ACCEL:     0.9,  // regain de vitesse en fin de manche pour garantir un vainqueur (0 = vitesse constante)
   WANDER:        0,    // courbe des trajectoires (0 = lignes droites ; monte pour des courbes)
-  FLAG_RADIUS:   26,   // taille des drapeaux (px). Avec 20 par manche, 24–28 est le bon compromis.
+  FLAG_RADIUS:     15, // taille de DÉPART des drapeaux (quand tout le monde est là)
+  GROW_FLAGS:      true, // ⭐ les drapeaux GROSSISSENT à mesure que les concurrents sont éliminés
+  FLAG_RADIUS_MAX: 40, // taille maxi atteinte en fin de manche (mets = FLAG_RADIUS pour figer)
+  LIGHT_RENDER_AT: 40, // au-delà de N boules : plus d'ombres ni de traînées (indispensable pour le CPU du serveur)
   COLLISIONS:    true, // ⭐ les boules s'entrechoquent entre elles (beaucoup plus d'aléatoire)
   RENDER_FPS:    32,   // plafond d'images/s calculées (0 = illimité). 32 = fluide et 2× moins de CPU,
                        // indispensable pour un serveur qui diffuse en 24/7.
@@ -67,7 +72,7 @@ const CONFIG = {
   /* ======================================================================
      4bis) SUDDEN DEATH — quand il reste peu de survivants, ça s'emballe
      ====================================================================== */
-  SUDDEN_DEATH_AT:    4,    // déclenche quand il reste ce nombre de boules (0 = désactivé)
+  SUDDEN_DEATH_AT:    10,   // déclenche quand il reste ce nombre de boules (0 = désactivé)
   SUDDEN_DEATH_SPEED: 1.35, // multiplicateur de vitesse pendant le sudden death
   SUDDEN_DEATH_GAP:   1.5,  // élargissement de l'ouverture pendant le sudden death
   SUDDEN_DEATH_COLOR: '#ff9d00', // couleur de l'anneau en sudden death (≠ rouge de la sortie, pour rester lisible)
@@ -75,17 +80,23 @@ const CONFIG = {
   /* ======================================================================
      5) DURÉES DES ANNONCES
      ====================================================================== */
-  WINNER_BANNER_SEC:   1.8,  // pause "vainqueur de la manche" (court = plus dynamique)
-  CHAMPION_BANNER_SEC: 3.5,  // pause "champion" avant de tout relancer (court = ça repart vite)
+  WINNER_BANNER_SEC:   1.8,  // pause "vainqueur de la manche" (mode classique uniquement ;
+                             // en mode express il n'y a pas d'annonce intermédiaire)
+  CHAMPION_BANNER_SEC: 1.5,  // pause "WORLD CHAMPION" avant de tout relancer
 
   /* ======================================================================
      6) CLASSEMENT DES CHAMPIONS (colonne de gauche, défile, persistant)
      ====================================================================== */
   SHOW_LEADERBOARD:      true,   // colonne de GAUCHE : classement des champions (persistant)
   LEADERBOARD_TITLE:     '🏆 CHAMPIONS',
-  SHOW_QUALIFIED:        true,   // colonne de DROITE : qualifiés du round en cours
+  CHAMPIONS_STRIP:       false,  // false = colonne verticale (recommandé) ; true = bandeau horizontal
+  SHOW_QUALIFIED:        true,   // colonne de DROITE : qualifiés (classique) / SURVIVORS (express)
   QUALIFIED_TITLE:       '✅ QUALIFIED',
-  SHOW_ROSTER:           true,   // sous le cercle : les 6 pays de la manche (barrés quand éliminés)
+  SURVIVORS_TITLE:       '🎯 SURVIVORS',
+  SURVIVORS_AT:          12,     // (express) affiche la liste des survivants sous ce nombre
+  SHOW_LASTOUT:          true,   // (express) colonne de gauche : flux des derniers éliminés
+  LASTOUT_TITLE:         '❌ LAST OUT',
+  SHOW_ROSTER:           true,   // sous le cercle : les pays de la manche (mode classique)
   LEADERBOARD_SCROLL:    18,     // vitesse de défilement (px/s) si une liste dépasse
   PERSIST_STATS:         true,   // garde le classement même après un rechargement (24/7)
 

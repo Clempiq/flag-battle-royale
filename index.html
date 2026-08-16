@@ -47,9 +47,15 @@
     <div id="lbViewport" class="lb-viewport"><div id="lbTrack" class="lb-track"></div></div>
   </div>
 
-  <!-- COLONNE DROITE : qualifiés du round -->
+  <!-- COLONNE GAUCHE (bas, mode express) : derniers éliminés -->
+  <div id="lastout" class="side-col">
+    <div class="lb-title"><span id="loTitle">❌ LAST OUT</span></div>
+    <div id="loViewport" class="lb-viewport"><div id="loTrack" class="lb-track"></div></div>
+  </div>
+
+  <!-- COLONNE DROITE : qualifiés (classique) / survivants (express) -->
   <div id="qualified" class="side-col">
-    <div class="lb-title"><span id="qTitle">✅ QUALIFIÉS</span><span id="qCount" class="q-count">0</span></div>
+    <div class="lb-title"><span id="qTitle">✅ QUALIFIED</span><span id="qCount" class="q-count">0</span></div>
     <div id="qViewport" class="lb-viewport"><div id="qTrack" class="lb-track"></div></div>
   </div>
 
@@ -75,6 +81,9 @@
     </div>
     <div id="progressTrack"><div id="progressFill"></div></div>
   </div>
+
+  <!-- Champions en une seule ligne (mode express) -->
+  <div id="champStrip"></div>
 
   <div id="confetti"></div>
 </div>
