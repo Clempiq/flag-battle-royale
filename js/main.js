@@ -3,8 +3,44 @@
    • Sans paramètre d'URL  → page d'accueil (réglages + Démarrer)
    • ?go=1                 → lance directement le live (à mettre dans OBS)
    • ?menu=1               → force la page d'accueil
+   -----------------------------------------------------------------------
+   RÉGLAGES PAR L'URL — indispensable quand on n'a pas accès à la page
+   d'accueil (serveur 24/7, source « lien » de TikTok LIVE Studio…) :
+   • ?go=1&mode=clubs                       → change le contenu du jeu
+     (mode = countries | clubs | brands | capitals)
+   • ?go=1&set=BASE_SPEED:340,SUDDEN_DEATH_AT:8
+     → force n'importe quel réglage de config.js, séparés par des virgules.
+   Ces valeurs ne sont PAS enregistrées : elles ne valent que pour cette URL,
+   donc deux liens différents = deux parties différentes, en simultané.
    ======================================================================= */
 (function () {
+  /* ---------- réglages passés dans l'URL ---------- */
+  function applyUrlOverrides(q) {
+    const done = [];
+    const one = (key, raw) => {
+      const k = String(key).trim().toUpperCase();
+      if (!(k in CONFIG)) { console.warn('[URL] réglage inconnu :', k); return; }
+      const s = String(raw).trim();
+      let v = s;
+      if (s === 'true') v = true;
+      else if (s === 'false') v = false;
+      else if (s !== '' && !isNaN(Number(s))) v = Number(s);
+      CONFIG[k] = v; done.push(k + '=' + v);
+    };
+    const m = q.get('mode');
+    if (m) {
+      const ok = (window.MODES || []).some(x => x.id === m);
+      if (ok) one('MODE', m); else console.warn('[URL] mode inconnu :', m);
+    }
+    const set = q.get('set');
+    if (set) for (const pair of set.split(',')) {
+      const i = pair.indexOf(':');
+      if (i > 0) one(pair.slice(0, i), pair.slice(i + 1));
+    }
+    if (done.length) console.log('[URL] réglages forcés →', done.join('  '));
+    return done;
+  }
+
   function fitStage() {
     const s = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
     const st = document.getElementById('stage');
@@ -43,9 +79,10 @@
 
   function route() {
     Home.load();       // applique la config sauvegardée par-dessus les défauts
+    const q = new URLSearchParams(location.search);
+    applyUrlOverrides(q);   // …puis l'URL a le dernier mot
     Home.init();
     applyTheme();
-    const q = new URLSearchParams(location.search);
     if (q.get('go') === '1' && q.get('menu') !== '1') {
       document.getElementById('home').classList.add('hidden');
       document.getElementById('stage').style.display = '';
