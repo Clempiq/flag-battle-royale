@@ -41,11 +41,29 @@
     return done;
   }
 
+  /* ---------- choix de la mise en page ----------
+     'tall'    = 1080×1920 (OBS, VPS, YouTube : le format d'origine)
+     'compact' = 1080×816  (source « lien » de TikTok LIVE Studio, bridée par
+                 la hauteur de l'écran → on remplit exactement ce qu'on a)
+     Par défaut : automatique selon la forme réelle de la fenêtre.
+     Forçable avec ?layout=compact ou ?layout=tall                        */
+  let LAYOUT = 'auto';
+  function stageSize() {
+    const st = document.getElementById('stage');
+    let compact;
+    if (LAYOUT === 'compact') compact = true;
+    else if (LAYOUT === 'tall') compact = false;
+    else compact = (window.innerWidth / window.innerHeight) > 0.72;  // fenêtre pas assez haute
+    if (st) st.classList.toggle('compact', compact);
+    return compact ? [1080, 816] : [1080, 1920];
+  }
   function fitStage() {
-    const s = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+    const [W, H] = stageSize();
+    const s = Math.min(window.innerWidth / W, window.innerHeight / H);
     const st = document.getElementById('stage');
     if (st) st.style.transform = `translate(-50%, -50%) scale(${s})`;
   }
+  window.__setLayout = (v) => { LAYOUT = v; fitStage(); };
   window.addEventListener('resize', fitStage);
   // Certains hôtes (source « lien » de TikTok LIVE Studio, navigateurs intégrés…)
   // redimensionnent la surface SANS déclencher l'événement resize : on surveille
@@ -88,6 +106,8 @@
     Home.load();       // applique la config sauvegardée par-dessus les défauts
     const q = new URLSearchParams(location.search);
     applyUrlOverrides(q);   // …puis l'URL a le dernier mot
+    const lay = (q.get('layout') || '').toLowerCase();
+    if (lay === 'compact' || lay === 'tall' || lay === 'auto') LAYOUT = lay;
     Home.init();
     applyTheme();
     if (q.get('go') === '1' && q.get('menu') !== '1') {

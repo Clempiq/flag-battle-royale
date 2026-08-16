@@ -206,3 +206,48 @@ html,body{height:100%;background:#000;font-family:'Rajdhani',system-ui,sans-seri
 /* boutons masqués : on les sort COMPLÈTEMENT du rendu (visibility), sinon le
    navigateur garde une couche de composition active pendant tout le live. */
 #fsToggle.fs-hidden,#homeToggle.fs-hidden{visibility:hidden}
+
+/* =======================================================================
+   MISE EN PAGE COMPACTE — 1080 × 816
+   -----------------------------------------------------------------------
+   La source « lien » de TikTok LIVE Studio ne peut pas dépasser la hauteur
+   de l'écran physique : elle rend la page dans une fenêtre réelle. Sur un
+   écran 1536×864, on récupère 1080×816 et pas 1080×1920.
+   Cette mise en page occupe donc EXACTEMENT cette zone : rendu 1:1, aucune
+   mise à l'échelle, image parfaitement nette. TikTok remplit le haut et le
+   bas du 9:16 avec son chat, ses cadeaux et sa barre de titre.
+   Activée automatiquement quand la fenêtre n'est pas verticale, ou de force
+   avec ?layout=compact  (et ?layout=tall pour revenir au 1080×1920).
+   ======================================================================= */
+#stage.compact{width:1080px;height:816px}
+#stage.compact #lastout,
+#stage.compact #qualified,
+#stage.compact #heatRoster,
+#stage.compact #champStrip,
+#stage.compact #aliveTag{display:none}   /* redondant avec la barre de progression */
+
+#stage.compact #topbar{top:8px;left:300px;right:14px}
+#stage.compact #roundLabel{font-size:46px;letter-spacing:3px}
+#stage.compact #timerPill{margin-top:8px;font-size:22px;letter-spacing:2px;padding:5px 20px;gap:10px}
+#stage.compact #titleHolder{margin-top:6px;font-size:20px}
+
+#stage.compact #leaderboard{left:14px;right:auto;top:14px;width:272px;height:788px;padding:12px 8px}
+#stage.compact .lb-title{font-size:20px;margin-bottom:8px}
+#stage.compact .lb-row{padding:5px 6px;margin-bottom:5px;gap:5px}
+#stage.compact .lb-name{font-size:23px}
+#stage.compact .lb-flag{width:28px;height:28px}
+#stage.compact .lb-rank{width:20px;flex:0 0 20px;font-size:18px}
+#stage.compact .lb-count{font-size:20px}
+
+#stage.compact #arenaWrap{left:363px;top:120px;transform:none;width:640px;height:640px}
+
+#stage.compact #progressWrap{left:300px;right:14px;top:750px}
+#stage.compact #progressLabelRow{font-size:21px}
+#stage.compact #progressTrack{height:11px}
+
+#stage.compact #winnerBanner{left:683px;top:400px;width:520px}
+#stage.compact .wb-title{font-size:30px;letter-spacing:2px}
+#stage.compact .wb-flag{width:150px;height:150px}
+#stage.compact #winnerBanner.champion .wb-flag{width:190px;height:190px}
+#stage.compact .wb-name{font-size:44px}
+#stage.compact .wb-sub{font-size:22px}
