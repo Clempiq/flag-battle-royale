@@ -40,9 +40,28 @@ window.Engine = (function () {
   // clés de stockage par MODE (les Pays gardent leurs anciennes clés pour ne rien perdre)
   function statsKey() { return CONFIG.MODE === 'countries' ? 'br_stats_v1' : 'br_stats_' + CONFIG.MODE; }
   function reignKey() { return CONFIG.MODE === 'countries' ? 'br_reigning_v1' : 'br_reigning_' + CONFIG.MODE; }
+
+  /* Remise à zéro du classement, décidée UNE FOIS au chargement.
+       ?reset=1          → remet à zéro à CHAQUE chargement (danger en 24/7 :
+                           un simple rechargement efface la session en cours)
+       ?reset=<jeton>    → remet à zéro UNE SEULE FOIS par jeton. Recommandé :
+                           mets la date du jour (?reset=17aout). Tu peux laisser
+                           le paramètre dans l'URL toute la journée : si la page
+                           recharge en pleine diffusion, le classement survit.  */
+  const RESET_NOW = (function () {
+    const q = new URLSearchParams(location.search).get('reset');
+    if (!q) return false;
+    if (q === '1') return true;
+    try {
+      if (localStorage.getItem('br_reset_token') === q) return false;
+      localStorage.setItem('br_reset_token', q);
+    } catch (e) {}
+    return true;
+  })();
+
   function loadStats() {
     if (!CONFIG.PERSIST_STATS) return {};
-    if (new URLSearchParams(location.search).get('reset') === '1') {
+    if (RESET_NOW) {
       try { localStorage.removeItem(statsKey()); } catch (e) {}
       return {};
     }
@@ -62,7 +81,7 @@ window.Engine = (function () {
   /* ---------- tenant du titre (dernier champion) ---------- */
   function loadReigning() {
     if (!CONFIG.PERSIST_STATS) return null;
-    if (new URLSearchParams(location.search).get('reset') === '1') { try { localStorage.removeItem(reignKey()); } catch (e) {} return null; }
+    if (RESET_NOW) { try { localStorage.removeItem(reignKey()); } catch (e) {} return null; }
     try { return JSON.parse(localStorage.getItem(reignKey()) || 'null'); } catch (e) { return null; }
   }
   function setReigning(entry) {
@@ -205,7 +224,11 @@ window.Engine = (function () {
       return { entry, code: entry[0], name: entry[1], img: getFlag(entry[0]),
         x: CX + Math.cos(ang) * rr, y: CY + Math.sin(ang) * rr,
         vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, speed,
-        state: 'alive', alpha: 1, exitVx: 0, exitVy: 0, scale: 0, trail: [] };
+        state: 'alive', alpha: 1, exitVx: 0, exitVy: 0, scale: 0, trail: [],
+        // rotation : chaque boule tourne à son propre rythme, dans son propre sens
+        rot: Math.random() * Math.PI * 2,
+        spinDir: Math.random() < 0.5 ? -1 : 1,
+        spinRate: 0.55 + Math.random() * 0.9 };
     });
     // désempilage : on sépare, puis on ramène tout le monde à l'intérieur (sinon le
     // désempilage éjecte les boules vers la paroi et elles sortent immédiatement)
@@ -287,6 +310,8 @@ window.Engine = (function () {
     const grew = T.flagR - prevR;
     const boundary = RING_R - T.flagR;                     // là où le drapeau touche l'anneau
     const jitterMax = (CONFIG.BOUNCE_RANDOM || 0) * Math.PI / 180;
+    const spinK = CONFIG.SPIN_FLAGS === false ? 0 : (CONFIG.SPIN_SPEED == null ? 1 : CONFIG.SPIN_SPEED) * 2.2;
+    const spinRef = Math.max(60, CONFIG.BASE_SPEED || 280);
     // léger regain de vitesse en fin de manche (garantit un vainqueur ; PAS d'attraction)
     const ef = Math.max(0, Math.min(1, (CONFIG.HEAT_DURATION_SEC - T.heatTimer) / Math.max(1, CONFIG.HEAT_DURATION_SEC)));
     let speedMult = 1 + (CONFIG.END_ACCEL || 0) * ef;
@@ -309,6 +334,10 @@ window.Engine = (function () {
       // Déplacement en ligne droite
       p.x += p.vx * dt; p.y += p.vy * dt;
 
+      // ROTATION : vitesse angulaire proportionnelle à la vitesse de la boule,
+      // donc ça ralentit quand ça ralentit — c'est ce qui rend le mouvement crédible.
+      if (spinK > 0) p.rot += p.spinDir * p.spinRate * spinK * (target / spinRef) * dt;
+
       // Collision avec l'anneau : rebond, ou sortie si dans la zone
       const dx = p.x - CX, dy = p.y - CY, r = Math.hypot(dx, dy) || 0.0001, ux = dx / r, uy = dy / r;
       if (r >= boundary) {
@@ -329,6 +358,13 @@ window.Engine = (function () {
         if (jitterMax > 0) { const a = (Math.random() * 2 - 1) * jitterMax, c = Math.cos(a), s = Math.sin(a); const t = rvx * c - rvy * s; rvy = rvx * s + rvy * c; rvx = t; }
         const m = Math.hypot(rvx, rvy) || 1; p.vx = rvx / m * target; p.vy = rvy / m * target;
         const inR = boundary - 1; p.x = CX + ux * inR; p.y = CY + uy * inR;  // replacer juste à l'intérieur
+        // le choc contre la paroi communique de l'effet : le sens de rotation
+        // suit la composante tangentielle du rebond (comme une bille qui frotte)
+        if (spinK > 0) {
+          const tang = -uy * p.vx + ux * p.vy;
+          if (tang !== 0) p.spinDir = tang > 0 ? 1 : -1;
+          p.spinRate = 0.5 + Math.random() * 1.0;
+        }
         if (CONFIG.SFX_BOUNCE !== false) window.SFX && window.SFX.bounce();
       }
       pushTrail(p);
@@ -427,32 +463,111 @@ window.Engine = (function () {
      Toutes les boules ayant le même rayon, un seul palier suffit à la fois. */
   const SPRITE_STEPS = [40, 72, 128];
   let SPRITE = 128;
-  const spriteCache = new Map();
+  let spriteCache = new Map();
+  let oldSprites = new Map();   // sprites du palier précédent : évitent un à-coup pendant la reconstruction
+  let buildBudget = 0;          // nb de sprites reconstruits par image (réinitialisé dans render)
   function updateSpriteSize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const want = FR() * 2 * dpr;
     let s = SPRITE_STEPS[SPRITE_STEPS.length - 1];
     for (const v of SPRITE_STEPS) if (v >= want) { s = v; break; }
-    if (s !== SPRITE) { SPRITE = s; spriteCache.clear(); }
+    if (s !== SPRITE) { SPRITE = s; oldSprites = spriteCache; spriteCache = new Map(); lightSprite = null; }
   }
+
+  /* ---------- rendu « boule 3D » ----------
+     Le drapeau est projeté sur une sphère (bande par bande : compression
+     horizontale par sqrt(1-y²) et échantillonnage vertical en arcsin), puis
+     on pose l'éclairage : reflet spéculaire en haut à gauche, assombrissement
+     vers le bas à droite, et une lumière de bord (rim light) sur le côté
+     opposé. Tout est fait UNE fois par drapeau, dans le sprite en cache.
+     N'utilise que drawImage/gradients : aucune lecture de pixels, donc les
+     images distantes (flagcdn, logos de clubs) passent sans CORS.          */
+  function paintSphere(g, im, S, R, edge) {
+    const iw = im.naturalWidth, ih = im.naturalHeight;
+    g.save();
+    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2); g.clip();
+    g.fillStyle = '#26304f'; g.fillRect(0, 0, S, S);
+
+    if (CONFIG.SPHERE_FLAGS === false) {          // ancien rendu : drapeau plat, aucun éclairage
+      const sc = Math.max((R * 2) / iw, (R * 2) / ih);
+      g.drawImage(im, S / 2 - iw * sc / 2, S / 2 - ih * sc / 2, iw * sc, ih * sc);
+      g.restore();
+      g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2);
+      g.lineWidth = edge; g.strokeStyle = 'rgba(255,255,255,0.65)'; g.stroke();
+      return;
+    }
+    {
+      const N = Math.max(20, Math.min(72, Math.round(R * 1.2)));
+      for (let i = 0; i < N; i++) {
+        const dy0 = (i / N) * 2 - 1, dy1 = ((i + 1) / N) * 2 - 1;
+        const dyc = (dy0 + dy1) / 2;
+        const hw = Math.sqrt(Math.max(0.02, 1 - dyc * dyc));      // demi-largeur de la sphère à cette hauteur
+        const v0 = 0.5 + Math.asin(Math.max(-1, Math.min(1, dy0))) / Math.PI;
+        const v1 = 0.5 + Math.asin(Math.max(-1, Math.min(1, dy1))) / Math.PI;
+        const sy = v0 * ih, sh = Math.max(0.6, (v1 - v0) * ih);
+        const dW = 2 * hw * R * 1.03;                              // léger débord : pas de fente entre bandes
+        g.drawImage(im, 0, sy, iw, sh,
+                    S / 2 - dW / 2, S / 2 + dy0 * R, dW, (dy1 - dy0) * R + 0.7);
+      }
+    }
+
+    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2);
+    g.lineWidth = edge; g.strokeStyle = 'rgba(255,255,255,0.5)'; g.stroke();
+  }
+
+  /* L'éclairage ne doit PAS tourner avec la boule : sinon le reflet suit la
+     texture et on croit voir une lampe qui tourne, pas une bille éclairée.
+     On le dessine donc à part, une seule fois pour toutes les boules, et on
+     le pose par-dessus sans rotation. */
+  let lightSprite = null, lightSpriteS = -1;
+  function getLightSprite() {
+    if (CONFIG.SPHERE_FLAGS === false) return null;
+    const S = SPRITE;
+    if (lightSprite && lightSpriteS === S) return lightSprite;
+    const edge = Math.max(2, Math.round(S / 26)), R = S / 2 - edge * 0.6;
+    const c = document.createElement('canvas'); c.width = S; c.height = S;
+    const g = c.getContext('2d');
+    const gloss = CONFIG.SPHERE_GLOSS == null ? 1 : Math.max(0, Math.min(1.6, CONFIG.SPHERE_GLOSS));
+    g.save();
+    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2); g.clip();
+    // ombrage : clair vers la lumière (haut-gauche), sombre au bord opposé
+    const sh1 = g.createRadialGradient(S * 0.36, S * 0.32, R * 0.10, S * 0.50, S * 0.50, R * 1.05);
+    sh1.addColorStop(0.00, 'rgba(255,255,255,' + (0.10 * gloss).toFixed(3) + ')');
+    sh1.addColorStop(0.45, 'rgba(0,0,0,0)');
+    sh1.addColorStop(0.80, 'rgba(0,0,0,' + (0.30 * gloss).toFixed(3) + ')');
+    sh1.addColorStop(1.00, 'rgba(0,0,0,' + (0.60 * gloss).toFixed(3) + ')');
+    g.fillStyle = sh1; g.fillRect(0, 0, S, S);
+    // reflet spéculaire
+    const sp = g.createRadialGradient(S * 0.34, S * 0.27, 0, S * 0.34, S * 0.27, R * 0.66);
+    sp.addColorStop(0.00, 'rgba(255,255,255,' + (0.62 * gloss).toFixed(3) + ')');
+    sp.addColorStop(0.35, 'rgba(255,255,255,' + (0.18 * gloss).toFixed(3) + ')');
+    sp.addColorStop(1.00, 'rgba(255,255,255,0)');
+    g.fillStyle = sp; g.fillRect(0, 0, S, S);
+    // lumière de bord : décolle la boule du fond
+    const rim = g.createRadialGradient(S * 0.60, S * 0.66, R * 0.62, S * 0.56, S * 0.62, R * 1.02);
+    rim.addColorStop(0.00, 'rgba(255,255,255,0)');
+    rim.addColorStop(0.88, 'rgba(255,255,255,' + (0.06 * gloss).toFixed(3) + ')');
+    rim.addColorStop(1.00, 'rgba(255,255,255,' + (0.34 * gloss).toFixed(3) + ')');
+    g.fillStyle = rim; g.fillRect(0, 0, S, S);
+    g.restore();
+    lightSprite = c; lightSpriteS = S;
+    return c;
+  }
+
   function getSprite(p) {
     const key = CONFIG.MODE + ':' + p.code;
     const hit = spriteCache.get(key);
     if (hit) return hit;
     const im = p.img;
     if (!im || !im.__ready || !im.naturalWidth) return null;   // pas encore chargé : on réessaiera
+    // budget épuisé : on réutilise le sprite de l'ancien palier le temps d'une image
+    if (buildBudget <= 0) { const o = oldSprites.get(key); if (o) return o; }
+    buildBudget--;
     const S = SPRITE, edge = Math.max(2, Math.round(S / 26));
     const c = document.createElement('canvas'); c.width = S; c.height = S;
     const g = c.getContext('2d');
     const R = S / 2 - edge * 0.6;
-    g.save();
-    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2); g.clip();
-    g.fillStyle = '#26304f'; g.fillRect(0, 0, S, S);
-    const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max((R * 2) / iw, (R * 2) / ih);
-    g.drawImage(im, S / 2 - iw * sc / 2, S / 2 - ih * sc / 2, iw * sc, ih * sc);
-    g.restore();
-    g.beginPath(); g.arc(S / 2, S / 2, R, 0, Math.PI * 2);
-    g.lineWidth = edge; g.strokeStyle = 'rgba(255,255,255,0.65)'; g.stroke();
+    paintSphere(g, im, S, R, edge);
     spriteCache.set(key, c);
     return c;
   }
@@ -468,7 +583,16 @@ window.Engine = (function () {
           ctx.beginPath(); ctx.arc(p.x, p.y, R + 3, 0, Math.PI * 2);
           ctx.fillStyle = hexA(CONFIG.ACCENT_2, 0.55); ctx.fill();
         }
-        ctx.drawImage(sp, p.x - R, p.y - R, R * 2, R * 2);   // 1 seul appel, aucun clip
+        if (CONFIG.SPIN_FLAGS !== false) {                   // la boule tourne sur elle-même
+          ctx.save();
+          ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0);
+          ctx.drawImage(sp, -R, -R, R * 2, R * 2);
+          ctx.restore();
+        } else {
+          ctx.drawImage(sp, p.x - R, p.y - R, R * 2, R * 2); // 1 seul appel, aucun clip
+        }
+        const lt = getLightSprite();                          // éclairage FIXE, ne tourne pas
+        if (lt) ctx.drawImage(lt, p.x - R, p.y - R, R * 2, R * 2);
       } else {
         ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
         ctx.fillStyle = '#26304f'; ctx.fill();
@@ -496,6 +620,7 @@ window.Engine = (function () {
   }
   function render() {
     updateSpriteSize();
+    buildBudget = 20;                    // au plus 20 sprites reconstruits par image → aucun à-coup
     ctx.imageSmoothingQuality = 'low';   // suffisant à cette taille, bien moins coûteux
     ctx.clearRect(0, 0, CW, CH); drawRing();
     for (const p of T.particles) if (p.state !== 'dead') drawTrail(p);

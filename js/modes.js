@@ -60,7 +60,7 @@ const CLUBS = [
   [157,'Bayern München'],[165,'Borussia Dortmund'],[168,'Bayer Leverkusen'],[173,'RB Leipzig'],
   [169,'Eintracht Frankfurt'],[172,'VfB Stuttgart'],[160,'Freiburg'],[161,'Wolfsburg'],
   [162,'Werder Bremen'],[163,'B. Mönchengladbach'],[164,'Mainz'],[167,'Hoffenheim'],
-  [170,'Augsburg'],[182,'Union Berlin'],[178,'FC Köln'],[159,'Hertha Berlin'],
+  [170,'Augsburg'],[182,'Union Berlin'],[192,'FC Köln'],[159,'Hertha Berlin'],
   /* --- Ligue 1 (France) --- */
   [85,'Paris Saint-Germain'],[81,'Marseille'],[80,'Lyon'],[91,'Monaco'],[84,'Nice'],[79,'Lille'],
   [94,'Rennes'],[116,'Lens'],[93,'Reims'],[83,'Nantes'],[82,'Montpellier'],[95,'Strasbourg'],
@@ -73,11 +73,11 @@ const CLUBS = [
   [247,'Celtic'],[257,'Rangers'],
   /* --- Autres habitués des coupes d'Europe (best-effort, vérifie les logos) --- */
   [645,'Galatasaray'],[611,'Fenerbahçe'],[998,'Beşiktaş'],
-  [553,'Olympiacos'],[567,'PAOK'],[566,'Panathinaikos'],[619,'AEK Athens'],
+  [553,'Olympiacos'],[619,'PAOK'],[617,'Panathinaikos'],[619,'AEK Athens'],
   [550,'Shakhtar Donetsk'],[551,'Dynamo Kyiv'],
   [569,'Club Brugge'],[554,'Anderlecht'],[742,'Genk'],[631,'Gent'],[1393,'Union SG'],
-  [571,'RB Salzburg'],[610,'Sturm Graz'],
-  [552,'Slavia Praha'],[570,'Sparta Praha'],[563,'Viktoria Plzeň'],
+  [571,'RB Salzburg'],[637,'Sturm Graz'],
+  [552,'Slavia Praha'],[570,'Sparta Praha'],[567,'Viktoria Plzeň'],
   [598,'Crvena Zvezda'],[573,'Partizan'],[592,'Dinamo Zagreb'],
   [400,'FC Copenhagen'],[397,'Midtjylland'],[327,'Bodø/Glimt'],
   [651,'Ferencváros'],[606,'Ludogorets'],[341,'Legia Warszawa'],[638,'Maccabi Tel Aviv'],
