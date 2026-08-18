@@ -64,23 +64,23 @@ const CLUBS = [
   /* --- Ligue 1 (France) --- */
   [85,'Paris Saint-Germain'],[81,'Marseille'],[80,'Lyon'],[91,'Monaco'],[84,'Nice'],[79,'Lille'],
   [94,'Rennes'],[116,'Lens'],[93,'Reims'],[83,'Nantes'],[82,'Montpellier'],[95,'Strasbourg'],
-  [96,'Toulouse'],[97,'Lorient'],[99,'Brest'],
+  [96,'Toulouse'],[97,'Lorient'],[106,'Brest'],
   /* --- Portugal --- */
-  [212,'FC Porto'],[211,'Benfica'],[228,'Sporting CP'],[217,'SC Braga'],[227,'Vitória Guimarães'],
+  [212,'FC Porto'],[211,'Benfica'],[228,'Sporting CP'],[217,'SC Braga'],[224,'Vitória Guimarães'],
   /* --- Pays-Bas --- */
   [194,'Ajax'],[197,'PSV'],[209,'Feyenoord'],[201,'AZ Alkmaar'],[415,'Twente'],
   /* --- Écosse --- */
   [247,'Celtic'],[257,'Rangers'],
   /* --- Autres habitués des coupes d'Europe (best-effort, vérifie les logos) --- */
-  [645,'Galatasaray'],[611,'Fenerbahçe'],[998,'Beşiktaş'],
-  [553,'Olympiacos'],[619,'PAOK'],[617,'Panathinaikos'],[619,'AEK Athens'],
-  [550,'Shakhtar Donetsk'],[551,'Dynamo Kyiv'],
+  [645,'Galatasaray'],[611,'Fenerbahçe'],[549,'Beşiktaş'],
+  [553,'Olympiacos'],[619,'PAOK'],[617,'Panathinaikos'],[575,'AEK Athens'],
+  [550,'Shakhtar Donetsk'],[572,'Dynamo Kyiv'],
   [569,'Club Brugge'],[554,'Anderlecht'],[742,'Genk'],[631,'Gent'],[1393,'Union SG'],
   [571,'RB Salzburg'],[637,'Sturm Graz'],
   [552,'Slavia Praha'],[570,'Sparta Praha'],[567,'Viktoria Plzeň'],
   [598,'Crvena Zvezda'],[573,'Partizan'],[592,'Dinamo Zagreb'],
   [400,'FC Copenhagen'],[397,'Midtjylland'],[327,'Bodø/Glimt'],
-  [651,'Ferencváros'],[606,'Ludogorets'],[341,'Legia Warszawa'],[638,'Maccabi Tel Aviv'],
+  [651,'Ferencváros'],[606,'Ludogorets'],[339,'Legia Warszawa'],[638,'Maccabi Tel Aviv'],
 ];
 
 window.MODES = [
