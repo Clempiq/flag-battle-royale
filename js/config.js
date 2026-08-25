@@ -57,7 +57,7 @@ const CONFIG = {
   FLAG_RADIUS_MAX: 40, // taille maxi atteinte en fin de manche (mets = FLAG_RADIUS pour figer)
   SPHERE_FLAGS:    true, // ⭐ rendu « countryball » : le drapeau est projeté sur une SPHÈRE
                          //    (bombé + reflet + ombre). false = drapeau plat comme avant.
-  SPIN_FLAGS:      true, // ⭐ les boules TOURNENT sur elles-mêmes (l'éclairage, lui, reste fixe)
+  SPIN_FLAGS:      false, // ⭐ les boules TOURNENT sur elles-mêmes (l'éclairage, lui, reste fixe)
   SPIN_SPEED:      1,    // vitesse de rotation (0.5 = lent, 1 = normal, 2 = vif)
   SPHERE_GLOSS:    1,    // intensité de l'éclairage : 0.6 = discret, 1 = normal, 1.4 = très brillant
   LIGHT_RENDER_AT: 40, // au-delà de N boules : plus d'ombres ni de traînées (indispensable pour le CPU du serveur)
