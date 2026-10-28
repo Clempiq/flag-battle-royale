@@ -1,16 +1,54 @@
-# 🏁 Flag Battle Royale — Live (TikTok / YouTube)
+# 🏁 Flag Battle Royale
 
-Tournoi automatique de drapeaux en « battle royale circulaire », vertical (9:16),
-pour un live 24/7 capturé dans OBS / TikTok LIVE Studio. 100 % côté client, aucun
-backend. **Tu règles tout depuis une page d'accueil, tu cliques Démarrer, ça tourne.**
+> Un tournoi automatique en « battle royale circulaire », vertical (9:16), conçu pour tourner en live 24/7 sur TikTok ou YouTube.
+
+**Démo :** [flag-battle-royale.vercel.app](https://flag-battle-royale.vercel.app)
+
+## Le problème
+
+Les lives automatisés (jeux de physique, courses de billes) attirent beaucoup de spectateurs sur TikTok, mais il faut un contenu qui tourne seul pendant des heures, se comprend en trois secondes et donne envie de participer en commentaire.
+
+**Pour qui :** un créateur qui veut diffuser un live permanent sans le piloter à la main, et des spectateurs qui soutiennent « leur » drapeau.
+
+## Fonctionnalités clés
+
+- **Tournoi automatique** en plusieurs tours (qualifications, 2e tour, demi-finale, finale), avec moteur physique maison.
+- **Cinq thèmes** : pays (drapeaux), clubs de foot, marques, capitales, Pokémon (151).
+- **Page de réglages** (vitesse, nombre de participants, durées, couleurs, affichages, sons) sauvegardée dans le navigateur.
+- **Classement des champions persistant** entre les tournois et les rechargements.
+- **Mode live direct** avec `?go=1` pour OBS ou TikTok LIVE Studio.
+- **Mise en page pensée pour TikTok** : la moitié basse reste libre pour les commentaires et cadeaux.
+
+## Stack
+
+| Catégorie | Technologie |
+|---|---|
+| Front | HTML, CSS et JavaScript natifs, rendu sur canvas |
+| Données | `localStorage` (réglages et classement) |
+| Médias | Drapeaux via flagcdn.com, sons générés dans le navigateur |
+| Déploiement | Vercel (site statique, aucun build) |
+
+## Statut
+
+✅ **Fonctionnel.** Prêt à être capturé dans OBS ; la diffusion réelle dépend des conditions TikTok LIVE (nombre d'abonnés).
+
+## Ce que j'ai appris
+
+- **Concevoir pour un contexte de diffusion précis** : format vertical, zone basse réservée à l'interface TikTok, compréhension immédiate.
+- **Rendre un outil autonome** : tout se règle depuis une page d'accueil, sans toucher au code ni redéployer.
+- **Penser l'engagement** : le classement persistant et les thèmes donnent une raison de revenir et de commenter.
 
 ---
 
-## 1) Régler & lancer — la PAGE D'ACCUEIL
+# Guide d'utilisation
+
+
+
+## 1) Régler & lancer : la PAGE D'ACCUEIL
 
 Ouvre le site (ou `index.html`). Tu arrives sur une **page de réglages** :
 vitesse des boules, drapeaux par manche, durées, couleurs, ce qui s'affiche,
-sons… Tu ajustes, puis tu cliques sur **▶ DÉMARRER**. C'est tout — plus besoin
+sons… Tu ajustes, puis tu cliques sur **▶ DÉMARRER**. C'est tout : plus besoin
 d'éditer des fichiers ni de redéployer à chaque changement.
 
 - Tes réglages sont **sauvegardés dans le navigateur** (ils reviennent au prochain lancement).
@@ -25,7 +63,7 @@ Mets dans OBS l'URL suivie de **`?go=1`** :
 
 > La liste des pays reste éditable dans **`js/countries.js`**. Et si tu préfères
 > figer des réglages par défaut « en dur », ils sont dans **`js/config.js`**
-> (tout commenté) — mais au quotidien la page d'accueil suffit.
+> (tout commenté) : mais au quotidien la page d'accueil suffit.
 
 ---
 
@@ -36,7 +74,7 @@ Mets dans OBS l'URL suivie de **`?go=1`** :
 - Un **chrono**, un compteur « in the ring », une **barre de progression**.
 - Le **tenant du titre** (dernier champion), affiché discrètement en haut.
 - À gauche, le **classement des CHAMPIONS** (titres gagnés), qui **défile** et
-  **reste en mémoire** entre les tournois et les rechargements — parfait pour que
+  **reste en mémoire** entre les tournois et les rechargements : parfait pour que
   les gens qui arrivent en cours de live voient un suivi.
 - De **petits sons** (élimination / vainqueur / champion), débloqués dès le clic
   sur Démarrer.
@@ -73,7 +111,7 @@ Puis sur Vercel : *Add New… → Project → Import*. Chaque `git push` redépl
 **Côté TikTok (à vérifier dans l'app, ça évolue) :** en général **1 000 abonnés**
 et **18 ans** pour débloquer TikTok LIVE.
 
-**Depuis un PC — le plus simple : TikTok LIVE Studio**
+**Depuis un PC : le plus simple : TikTok LIVE Studio**
 1. Installe **TikTok LIVE Studio**, connecte-toi.
 2. Ajoute une source **Navigateur** → colle ton URL Vercel **+ `?go=1`**, en **1080×1920**.
    (Si « Navigateur » n'existe pas, ouvre la page en plein écran dans Chrome et
@@ -113,7 +151,7 @@ Drapeaux via [flagcdn.com](https://flagcdn.com) → connexion internet nécessai
 ## 6) Conseils pour le live (et pour les cadeaux 🎁)
 
 - **Enjeu clair en une phrase** dès l'arrivée : « le dernier drapeau dans le cercle
-  gagne le titre » — un nouveau spectateur doit comprendre en 3 secondes.
+  gagne le titre » : un nouveau spectateur doit comprendre en 3 secondes.
 - **Fais participer** : « commente ton pays 🇫🇷 », « tape 🔥 si ton pays est encore là ».
   Les commentaires boostent la portée TikTok.
 - **Donne du pouvoir aux cadeaux** : annonce (à l'oral / en overlay TikTok) que tel
